@@ -1,0 +1,36 @@
+body {
+  font-family: sans-serif;
+  margin: 12px;
+}
+
+#trend-direction {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+#trend-strength {
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+#warning {
+  margin-top: 10px;
+  font-size: 18px;
+  color: red;
+}
+
+#chart {
+  width: 100%;
+  height: 240px;
+  border: 1px solid #ccc;
+  margin-top: 16px;
+}
+
+#news {
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.news-item {
+  margin: 4px 0;
+}
