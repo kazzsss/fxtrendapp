@@ -1,3 +1,7 @@
+window.onerror = function(msg, url, line) {
+  alert("Error: " + msg + "\nLine: " + line);
+};
+
 /* ============================
    為替データ取得（USDJPY）
 ============================ */
