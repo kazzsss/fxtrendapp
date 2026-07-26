@@ -8,26 +8,11 @@ async function fetchRate() {
 }
 
 /* ============================
-   ニュース取得（3件）
+   ニュース（今回は無効化）
 ============================ */
-async function fetchNews() {
-  const res = await fetch("https://finnhub.io/api/v1/news?category=forex&token=YOUR_API_KEY");
-  const data = await res.json();
-  return data.slice(0, 3);
-}
-
-function getImportance(title) {
-  if (title.match(/金利|利上げ|日銀|FRB|CPI|雇用統計/)) return "高";
-  if (title.match(/PMI|見通し|発言|市場/)) return "中";
-  return "低";
-}
-
 function displayNews(newsList) {
   const container = document.getElementById("news-list");
-  container.innerHTML = newsList.map(n => {
-    const imp = getImportance(n.headline);
-    return `<div class="news-item">● ${n.headline}（${imp}）</div>`;
-  }).join("");
+  container.innerHTML = "<div>ニュースは現在停止中</div>";
 }
 
 /* ============================
@@ -180,7 +165,7 @@ function updateUI(status) {
 }
 
 /* ============================
-   自動更新（為替5秒・ニュース30秒）
+   自動更新（為替5秒）
 ============================ */
 setInterval(async () => {
   const rate = await fetchRate();
@@ -188,8 +173,3 @@ setInterval(async () => {
   const status = getTrendStatus(candles);
   updateUI(status);
 }, 5000);
-
-setInterval(async () => {
-  const news = await fetchNews();
-  displayNews(news);
-}, 30000);
