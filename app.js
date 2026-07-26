@@ -6,9 +6,9 @@ window.onerror = function(msg, url, line) {
    為替データ取得（USDJPY）
 ============================ */
 async function fetchRate() {
-  const res = await fetch("https://open.er-api.com/v6/latest/USD");
+  const res = await fetch("https://api.exchangerate.host/convert?from=USD&to=JPY");
   const data = await res.json();
-  return data.rates.JPY;
+  return data.result;
 }
 
 /* ============================
