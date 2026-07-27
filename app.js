@@ -117,6 +117,7 @@ async function fetchCurrentRate() {
             "現在のレート：取得失敗";
         console.error(error);
     }
+   const rate = data.rates.JPY.toFixed(2);
 }
 
 /* ============================
@@ -135,7 +136,8 @@ setInterval(async () => {
   updateCandles(rate);
   const status = getTrendStatus(candles);
   updateUI(status);
-  fetchCurrentRate();
+
+  fetchCurrentRate();   
 }, 5000);
 
 /* ============================
