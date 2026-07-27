@@ -87,6 +87,51 @@ function getTrendStatus(candles) {
 }
 
 /* ============================
+   自動更新（5秒）
+============================ */
+setInterval(async () => {
+  const rate = await fetchRate();
+  if (!rate) return;  // ← null のときは更新しない
+
+  updateCandles(rate);
+  const status = getTrendStatus(candles);
+  updateUI(status);
+
+  document.getElementById("current-rate").textContent =
+      `現在のレート：${rate.toFixed(3)}`;
+}, 5000);
+
+let lastRate = 150.000;  // 初期値（安全対策）
+
+async function fetchRate() {
+  try {
+    const url =
+      "https://api.fxratesapi.com/latest?base=USD&symbols=JPY&nocache=" + Date.now();
+
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      console.warn("APIエラー発生、前回レートを使用:", res.status);
+      return lastRate;
+    }
+
+    const data = await res.json();
+
+    if (!data?.rates?.JPY) {
+      console.warn("JPYが取得できず、前回レートを使用");
+      return lastRate;
+    }
+
+    lastRate = data.rates.JPY;
+    return lastRate;
+
+  } catch (error) {
+    console.error("fetchRate エラー:", error);
+    return lastRate;
+  }
+}
+
+/* ============================
    UI更新
 ============================ */
 function updateUI(status) {
@@ -111,49 +156,6 @@ async function fetchNews() {
     "ニュース機能は準備中です。";
 }
 
-/* ============================
-   自動更新（5秒）
-============================ */
-setInterval(async () => {
-  const rate = await fetchRate();
-  updateCandles(rate);
-  const status = getTrendStatus(candles);
-  updateUI(status);
-
-  document.getElementById("current-rate").textContent =
-      `現在のレート：${rate.toFixed(3)}`;
-}, 5000); // ← 5秒に変更
-
-let lastRate = null;  // 前回のレートを保存する
-
-async function fetchRate() {
-  try {
-    const url = "https://api.fxratesapi.com/latest?base=USD&symbols=JPY";
-    const res = await fetch(url);
-
-    // 429 や 500 などエラー時は前回レートを返す
-    if (!res.ok) {
-      console.warn("APIエラー発生、前回レートを使用:", res.status);
-      return lastRate;
-    }
-
-    const data = await res.json();
-
-    // JPY が undefined の場合も前回レートを返す
-    if (!data?.rates?.JPY) {
-      console.warn("JPYが取得できず、前回レートを使用");
-      return lastRate;
-    }
-
-    // 正常時は lastRate を更新
-    lastRate = data.rates.JPY;
-    return lastRate;
-
-  } catch (error) {
-    console.error("fetchRate エラー:", error);
-    return lastRate;  // ネットワークエラー時も前回レート
-  }
-}
 
 /* ============================
    初期化
