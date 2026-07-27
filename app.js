@@ -7,10 +7,12 @@ let candles = [];
    レート取得（USDJPY）
 ============================ */
 async function fetchRate() {
-  const url = "https://api.exchangerate.host/latest?base=USD&symbols=JPY";
+  const url = "https://query1.finance.yahoo.com/v8/finance/chart/USDJPY=X?interval=1m";
   const res = await fetch(url);
   const data = await res.json();
-  return data.rates.JPY;
+
+  const rate = data.chart.result[0].meta.regularMarketPrice;
+  return rate;
 }
 
 /* ============================
