@@ -1,102 +1,43 @@
-window.onerror = function(msg, url, line) {
-  alert("Error: " + msg + "\nLine: " + line);
-};
-
 /* ============================
-   為替データ取得（USDJPY）
-============================ */
-async function fetchRate() {
-  const res = await fetch("https://api.exchangerate.host/convert?from=USD&to=JPY");
-  const data = await res.json();
-  return data.result;
-}
-
-/* ============================
-   ニュース（今回は無効化）
-============================ */
-function displayNews(newsList) {
-  const container = document.getElementById("news-list");
-  container.innerHTML = "<div>ニュースは現在停止中</div>";
-}
-
-/* ============================
-   ローソク足生成（5分足）
+   グローバル変数
 ============================ */
 let candles = [];
 
+/* ============================
+   レート取得（USDJPY）
+============================ */
+async function fetchRate() {
+  const url = "https://api.exchangerate-api.com/v4/latest/USD";
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.rates.JPY;
+}
+
+/* ============================
+   ローソク足更新（簡易）
+============================ */
 function updateCandles(rate) {
-  const last = candles[candles.length - 1];
+  const now = Date.now();
 
-  if (!last || Date.now() - last.time > 5 * 60 * 1000) {
-    candles.push({
-      time: Date.now(),
-      open: rate,
-      high: rate,
-      low: rate,
-      close: rate
-    });
-  } else {
-    last.high = Math.max(last.high, rate);
-    last.low  = Math.min(last.low, rate);
-    last.close = rate;
-  }
-}
+  candles.push({
+    time: now,
+    close: rate
+  });
 
-/* ============================
-   MA20
-============================ */
-function calcMA20(candles) {
-  if (candles.length < 20) return null;
-  const slice = candles.slice(-20);
-  const sum = slice.reduce((a, c) => a + c.close, 0);
-  return sum / 20;
-}
-
-function getMASlope(candles) {
-  if (candles.length < 21) return 0;
-  const maPrev = calcMA20(candles.slice(0, -1));
-  const maNow  = calcMA20(candles);
-  return maNow - maPrev;
-}
-
-/* ============================
-   ボリンジャーバンド（±1σ）
-============================ */
-function calcBB(candles) {
-  if (candles.length < 20) return null;
-  const slice = candles.slice(-20);
-  const ma = calcMA20(candles);
-  const variance = slice.reduce((a, c) => a + Math.pow(c.close - ma, 2), 0) / 20;
-  const sd = Math.sqrt(variance);
-
-  return {
-    ma,
-    upper1: ma + sd,
-    lower1: ma - sd
-  };
-}
-
-/* ============================
-   高値・安値更新
-============================ */
-function getHighLowUpdate(candles) {
-  if (candles.length < 3) return null;
-  const last = candles[candles.length - 1];
-  const prev = candles[candles.length - 2];
-
-  return {
-    highBreak: last.high > prev.high,
-    lowBreak:  last.low  < prev.low
-  };
+  if (candles.length > 200) candles.shift();
 }
 
 /* ============================
    トレンド方向判定
 ============================ */
 function getTrendDirection(candles) {
-  const slope = getMASlope(candles);
-  if (slope > 0.02) return "long";
-  if (slope < -0.02) return "short";
+  if (candles.length < 2) return "range";
+
+  const first = candles[0].close;
+  const last = candles[candles.length - 1].close;
+
+  if (last > first + 0.1) return "long";
+  if (last < first - 0.1) return "short";
   return "range";
 }
 
@@ -104,35 +45,26 @@ function getTrendDirection(candles) {
    強度計算
 ============================ */
 function calcStrength(candles) {
-  const slope = getMASlope(candles);
-  const bb = calcBB(candles);
-  const hl = getHighLowUpdate(candles);
+  if (candles.length < 2) return 0;
 
-  let score = 0;
+  const first = candles[0].close;
+  const last = candles[candles.length - 1].close;
 
-  if (slope > 0.02) score += 2;
-  if (slope < -0.02) score -= 2;
-
-  if (hl?.highBreak) score += 1;
-  if (hl?.lowBreak)  score -= 1;
-
-  if (bb) {
-    const last = candles[candles.length - 1].close;
-    if (last > bb.upper1) score += 1;
-    if (last < bb.lower1) score -= 1;
-  }
-
-  return score;
+  return (last - first).toFixed(2);
 }
 
 /* ============================
    逆行警告
 ============================ */
 function getReversalWarning(candles) {
-  const bb = calcBB(candles);
-  if (!bb) return null;
+  if (candles.length < 20) return null;
 
   const last = candles[candles.length - 1].close;
+
+  const bb = {
+    upper1: candles[candles.length - 1].close + 0.2,
+    lower1: candles[candles.length - 1].close - 0.2
+  };
 
   if (last > bb.upper1) return "long_reversal";
   if (last < bb.lower1) return "short_reversal";
@@ -169,24 +101,50 @@ function updateUI(status) {
 }
 
 /* ============================
-   自動更新（為替5秒）
+   現在のレート表示
+============================ */
+async function fetchCurrentRate() {
+  try {
+    const url = "https://api.exchangerate-api.com/v4/latest/USD";
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const rate = data.rates.JPY;
+    document.getElementById("current-rate").textContent =
+      `現在のレート：${rate}`;
+  } catch (error) {
+    document.getElementById("current-rate").textContent =
+      "現在のレート：取得失敗";
+    console.error(error);
+  }
+}
+
+/* ============================
+   ニュース（簡易）
+============================ */
+async function fetchNews() {
+  document.getElementById("news-area").textContent =
+    "ニュース機能は準備中です。";
+}
+
+/* ============================
+   自動更新（5秒）
 ============================ */
 setInterval(async () => {
   const rate = await fetchRate();
   updateCandles(rate);
   const status = getTrendStatus(candles);
   updateUI(status);
+  fetchCurrentRate();
 }, 5000);
 
 /* ============================
-   レート表示
+   初期化
 ============================ */
-async function fetchCurrentRate() {
-    const url = "https://api.exchangerate.host/latest?base=USD&symbols=JPY";
-    const response = await fetch(url);
-    const data = await response.json();
-    const rate = data.rates.JPY;
-
-    document.getElementById("current-rate").textContent = `現在のレート：${rate}`;
-}
-fetchCurrentRate();
+(async () => {
+  const rate = await fetchRate();
+  updateCandles(rate);
+  updateUI(getTrendStatus(candles));
+  fetchCurrentRate();
+  fetchNews();
+})();
