@@ -101,25 +101,6 @@ function updateUI(status) {
 }
 
 /* ============================
-   現在のレート表示
-============================ */
-async function fetchCurrentRate() {
-    try {
-        const url = "https://open.er-api.com/v6/latest/USD";
-        const response = await fetch(url);
-        const data = await response.json();   // ← これが必須！
-
-        const rate = data.rates.JPY.toFixed(3);
-        document.getElementById("current-rate").textContent =
-            `現在のレート：${rate}`;
-    } catch (error) {
-        document.getElementById("current-rate").textContent =
-            "現在のレート：取得失敗";
-        console.error(error);
-    }
-}
-
-/* ============================
    ニュース（簡易）
 ============================ */
 async function fetchNews() {
@@ -131,12 +112,13 @@ async function fetchNews() {
    自動更新（5秒）
 ============================ */
 setInterval(async () => {
-  const rate = await fetchRate();
+  const rate = await fetchRate();   // ← これが最新レート
   updateCandles(rate);
   const status = getTrendStatus(candles);
   updateUI(status);
 
-  fetchCurrentRate();   
+  document.getElementById("current-rate").textContent =
+      `現在のレート：${rate.toFixed(3)}`;
 }, 5000);
 
 /* ============================
@@ -146,6 +128,9 @@ setInterval(async () => {
   const rate = await fetchRate();
   updateCandles(rate);
   updateUI(getTrendStatus(candles));
-  fetchCurrentRate();
+
+  document.getElementById("current-rate").textContent =
+      `現在のレート：${rate.toFixed(3)}`;
+
   fetchNews();
 })();
