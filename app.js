@@ -6,12 +6,15 @@ let candles = [];
 /* ============================
    レート取得（USDJPY）
 ============================ */
-async function fetchRate() {
-  const url = "https://api.fxratesapi.com/latest?base=USD&symbols=JPY";
+async function fetchPrice() {
+  const url = "https://query1.finance.yahoo.com/v8/finance/chart/USDJPY=X";
   const res = await fetch(url);
   const data = await res.json();
-  return data.rates.JPY;
+  const price = data.chart.result[0].meta.regularMarketPrice;
+  console.log("USDJPY:", price);
 }
+
+setInterval(fetchPrice, 5000); // 5秒ごとに更新
 
 /* ============================
    ローソク足更新（簡易）
@@ -119,7 +122,7 @@ setInterval(async () => {
 
   document.getElementById("current-rate").textContent =
       `現在のレート：${rate.toFixed(3)}`;
-}, 30000); // ← 30秒に変更
+}, 5000); // ← 5秒に変更
 
 let lastRate = null;  // 前回のレートを保存する
 
