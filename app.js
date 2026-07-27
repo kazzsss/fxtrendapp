@@ -177,3 +177,13 @@ setInterval(async () => {
   const status = getTrendStatus(candles);
   updateUI(status);
 }, 5000);
+
+async function fetchCurrentRate() {
+    const url = "https://api.exchangerate.host/latest?base=USD&symbols=JPY";
+    const response = await fetch(url);
+    const data = await response.json();
+    const rate = data.rates.JPY;
+
+    document.getElementById("current-rate").textContent = `現在のレート：${rate}`;
+}
+fetchCurrentRate();
