@@ -7,7 +7,7 @@ let candles = [];
    レート取得（USDJPY）
 ============================ */
 async function fetchRate() {
-const url = "https://open.er-api.com/v6/latest/USD";
+  const url = "https://api.exchangerate.host/latest?base=USD&symbols=JPY";
   const res = await fetch(url);
   const data = await res.json();
   return data.rates.JPY;
