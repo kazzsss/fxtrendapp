@@ -112,14 +112,14 @@ async function fetchNews() {
    自動更新（5秒）
 ============================ */
 setInterval(async () => {
-  const rate = await fetchRate();   // ← これが最新レート
+  const rate = await fetchRate();
   updateCandles(rate);
   const status = getTrendStatus(candles);
   updateUI(status);
 
   document.getElementById("current-rate").textContent =
       `現在のレート：${rate.toFixed(3)}`;
-}, 5000);
+}, 30000); // ← 30秒に変更
 
 /* ============================
    初期化
