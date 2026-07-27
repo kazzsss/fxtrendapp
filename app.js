@@ -107,7 +107,7 @@ async function fetchCurrentRate() {
     try {
         const url = "https://open.er-api.com/v6/latest/USD";
         const response = await fetch(url);
-        const data = await response.json();   // ← ここが重要！
+        const data = await response.json();   // ← これが必須！
 
         const rate = data.rates.JPY.toFixed(3);
         document.getElementById("current-rate").textContent =
