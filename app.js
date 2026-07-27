@@ -104,19 +104,19 @@ function updateUI(status) {
    現在のレート表示
 ============================ */
 async function fetchCurrentRate() {
-  try {
-    const url = "https://api.exchangerate-api.com/v4/latest/USD";
-    const response = await fetch(url);
-    const data = await response.json();
+    try {
+        const url = "https://open.er-api.com/v6/latest/USD";
+        const response = await fetch(url);
+        const data = await response.json();
 
-    const rate = data.rates.JPY;
-    document.getElementById("current-rate").textContent =
-      `現在のレート：${rate}`;
-  } catch (error) {
-    document.getElementById("current-rate").textContent =
-      "現在のレート：取得失敗";
-    console.error(error);
-  }
+        const rate = data.rates.JPY;
+        document.getElementById("current-rate").textContent =
+            `現在のレート：${rate}`;
+    } catch (error) {
+        document.getElementById("current-rate").textContent =
+            "現在のレート：取得失敗";
+        console.error(error);
+    }
 }
 
 /* ============================
