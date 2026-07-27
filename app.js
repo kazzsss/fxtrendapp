@@ -2,107 +2,11 @@
    グローバル変数
 ============================ */
 let candles = [];
-
-/* ============================
-   レート取得（USDJPY）
-============================ */
-async function fetchPrice() {
-  const url = "https://query1.finance.yahoo.com/v8/finance/chart/USDJPY=X";
-  const res = await fetch(url);
-  const data = await res.json();
-  const price = data.chart.result[0].meta.regularMarketPrice;
-  console.log("USDJPY:", price);
-}
-
-setInterval(fetchPrice, 5000); // 5秒ごとに更新
-
-/* ============================
-   ローソク足更新（簡易）
-============================ */
-function updateCandles(rate) {
-  const now = Date.now();
-
-  candles.push({
-    time: now,
-    close: rate
-  });
-
-  if (candles.length > 200) candles.shift();
-}
-
-/* ============================
-   トレンド方向判定
-============================ */
-function getTrendDirection(candles) {
-  if (candles.length < 2) return "range";
-
-  const first = candles[0].close;
-  const last = candles[candles.length - 1].close;
-
-  if (last > first + 0.1) return "long";
-  if (last < first - 0.1) return "short";
-  return "range";
-}
-
-/* ============================
-   強度計算
-============================ */
-function calcStrength(candles) {
-  if (candles.length < 2) return 0;
-
-  const first = candles[0].close;
-  const last = candles[candles.length - 1].close;
-
-  return (last - first).toFixed(2);
-}
-
-/* ============================
-   逆行警告
-============================ */
-function getReversalWarning(candles) {
-  if (candles.length < 20) return null;
-
-  const last = candles[candles.length - 1].close;
-
-  const bb = {
-    upper1: candles[candles.length - 1].close + 0.2,
-    lower1: candles[candles.length - 1].close - 0.2
-  };
-
-  if (last > bb.upper1) return "long_reversal";
-  if (last < bb.lower1) return "short_reversal";
-
-  return null;
-}
-
-/* ============================
-   トレンド総合ステータス
-============================ */
-function getTrendStatus(candles) {
-  return {
-    direction: getTrendDirection(candles),
-    strength: calcStrength(candles),
-    warning: getReversalWarning(candles)
-  };
-}
-
-/* ============================
-   自動更新（5秒）
-============================ */
-setInterval(async () => {
-  const rate = await fetchRate();
-  if (!rate) return;  // ← null のときは更新しない
-
-  updateCandles(rate);
-  const status = getTrendStatus(candles);
-  updateUI(status);
-
-  document.getElementById("current-rate").textContent =
-      `現在のレート：${rate.toFixed(3)}`;
-}, 5000);
-
 let lastRate = 150.000;  // 初期値（安全対策）
 
+/* ============================
+   レート取得（APIキー不要）
+============================ */
 async function fetchRate() {
   try {
     const url =
@@ -132,41 +36,96 @@ async function fetchRate() {
 }
 
 /* ============================
+   ローソク足更新（5秒足）
+============================ */
+function updateCandles(rate) {
+  const now = Date.now();
+
+  candles.push({
+    time: now,
+    close: rate
+  });
+
+  if (candles.length > 300) candles.shift();
+}
+
+/* ============================
+   トレンド方向判定（強化版）
+============================ */
+function getTrendDirection(candles) {
+  if (candles.length < 20) return "range";
+
+  const last = candles[candles.length - 1].close;
+
+  // 短期（直近10本）
+  const shortStart = candles[candles.length - 10].close;
+  const shortDiff = last - shortStart;
+
+  // 中期（直近50本）
+  const midStart = candles[candles.length - 50]?.close ?? shortStart;
+  const midDiff = last - midStart;
+
+  // ロング判定（短期・中期とも上昇）
+  if (shortDiff > 0.05 && midDiff > 0.1) return "long";
+
+  // ショート判定（短期・中期とも下降）
+  if (shortDiff < -0.05 && midDiff < -0.1) return "short";
+
+  // レンジ判定（変動幅が小さい）
+  const rangeWidth = Math.abs(shortDiff);
+  if (rangeWidth < 0.03) return "range";
+
+  return "range";
+}
+
+/* ============================
+   強度計算（方向性を含む）
+============================ */
+function calcStrength(candles) {
+  if (candles.length < 20) return 0;
+
+  const first = candles[candles.length - 20].close;
+  const last = candles[candles.length - 1].close;
+
+  return (last - first).toFixed(3);
+}
+
+/* ============================
+   逆行警告（標準偏差ベース）
+============================ */
+function getReversalWarning(candles) {
+  if (candles.length < 20) return null;
+
+  const closes = candles.slice(-20).map(c => c.close);
+  const mean = closes.reduce((a,b)=>a+b,0) / closes.length;
+  const variance = closes.reduce((a,b)=>a + Math.pow(b-mean,2), 0) / closes.length;
+  const std = Math.sqrt(variance); // 標準偏差（ボラ）
+
+  const last = candles[candles.length - 1].close;
+
+  const upper = mean + std * 2;
+  const lower = mean - std * 2;
+
+  if (last > upper) return "long_reversal";
+  if (last < lower) return "short_reversal";
+
+  return null;
+}
+
+/* ============================
+   トレンド総合ステータス
+============================ */
+function getTrendStatus(candles) {
+  return {
+    direction: getTrendDirection(candles),
+    strength: calcStrength(candles),
+    warning: getReversalWarning(candles)
+  };
+}
+
+/* ============================
    UI更新
 ============================ */
 function updateUI(status) {
   document.getElementById("trend-direction").innerText =
-    status.direction === "long" ? "トレンド方向：ロング優勢" :
-    status.direction === "short" ? "トレンド方向：ショート優勢" :
-    "トレンド方向：レンジ";
-
-  document.getElementById("trend-strength").innerText =
-    `強度：${status.strength}`;
-
-  document.getElementById("warning").innerText =
-    status.warning === "long_reversal" ? "⚠️ ロング逆行注意" :
-    status.warning === "short_reversal" ? "⚠️ ショート逆行注意" : "";
-}
-
-/* ============================
-   ニュース（簡易）
-============================ */
-async function fetchNews() {
-  document.getElementById("news-area").textContent =
-    "ニュース機能は準備中です。";
-}
-
-
-/* ============================
-   初期化
-============================ */
-(async () => {
-  const rate = await fetchRate();
-  updateCandles(rate);
-  updateUI(getTrendStatus(candles));
-
-  document.getElementById("current-rate").textContent =
-    `現在のレート：${rate.toFixed(3)}`;
-
-  fetchNews();
-})();
+    status.direction === "
