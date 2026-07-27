@@ -130,7 +130,7 @@ setInterval(async () => {
   updateUI(getTrendStatus(candles));
 
   document.getElementById("current-rate").textContent =
-      `現在のレート：${rate.toFixed(3)}`;
+    `現在のレート：${rate.toFixed(3)}`;
 
   fetchNews();
 })();
