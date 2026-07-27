@@ -178,6 +178,9 @@ setInterval(async () => {
   updateUI(status);
 }, 5000);
 
+/* ============================
+   レート表示
+============================ */
 async function fetchCurrentRate() {
     const url = "https://api.exchangerate.host/latest?base=USD&symbols=JPY";
     const response = await fetch(url);
